@@ -1,0 +1,8 @@
+.autotest
+History.txt
+Manifest.txt
+README.txt
+Rakefile
+bin/knife/profitbricks
+lib/knife/profitbricks.rb
+test/test_knife/profitbricks.rb
