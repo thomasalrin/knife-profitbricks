@@ -1,8 +1,14 @@
 .autotest
+CHANGELOG.md
+Gemfile
+Gemfile.lock
 History.txt
 Manifest.txt
-README.txt
+README.md
 Rakefile
-bin/knife/profitbricks
+lib/chef/knife/profitbricks_base.rb
+lib/chef/knife/profitbricks_images_list.rb
+lib/chef/knife/profitbricks_initialize.rb
+lib/chef/knife/profitbricks_server_create.rb
+lib/chef/knife/profitbricks_server_list.rb
 lib/knife/profitbricks.rb
-test/test_knife/profitbricks.rb
