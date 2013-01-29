@@ -19,7 +19,7 @@ if defined?(RUBY_ENGINE) && RUBY_ENGINE == 'ruby'
     self.readme_file = 'README.md'
     self.history_file = 'CHANGELOG.md'
     self.extra_deps << ["profitbricks"]
-    self.extra_deps << ["knife", "> 0.10.0"]
+    self.extra_deps << ["chef", "> 10.0.0"]
   end
 
   task :prerelease => [:clobber, :check_manifest, :test]
