@@ -32,7 +32,6 @@ Due to the specifics of the Profitbricks IaaS we first need to create an image w
 
 ### knife profitbricks server create
 
-__beware__: this does not work properly yet  
 Provisions a new server and then perform a Chef bootstrap (using the SSH protocol). The goal of the bootstrap is to get Chef installed
 on the target system so it can run Chef Client with a Chef Server. 
 

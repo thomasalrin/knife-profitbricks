@@ -136,9 +136,10 @@ class Chef
         puts "#{ui.color("Locating Datacenter", :magenta)}"
         dc = DataCenter.find(:name => Chef::Config[:knife][:profitbricks_datacenter])
 
-        # FIXME
-        dc.clear
-        dc.wait_for_provisioning
+        # DELETEME for debugging only
+        #dc.clear
+        #dc.wait_for_provisioning
+        # DELETEME
 
         puts "#{ui.color("Locating Image", :magenta)}"
         image = Image.find(:name => 'knife-profitbricks.img')

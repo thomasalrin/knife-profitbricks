@@ -67,9 +67,9 @@ class Chef
         puts ui.color("Locating Datacenter", :magenta)
         dc = DataCenter.find(:name => locate_config_value(:profitbricks_datacenter))
 
-        # DELETEME
-        dc.clear
-        dc.wait_for_provisioning
+        # DELETEME for debugging only
+        #dc.clear
+        #dc.wait_for_provisioning
         # DELETEME
 
         ## Setup storage and server
@@ -135,11 +135,17 @@ class Chef
 
         ## Image uploading
         puts ui.color("Uploading the image to the profitbricks ftp server for later usage (this will take a few minutes)", :magenta)
-        ssh("sed -i 's/#GRUB_HIDDEN_TIMEOUT=0/GRUB_HIDDEN_TIMEOUT=0/' /etc/default/grub && grub-install /dev/sda && dd if=/dev/sda conv=sync bs=1M | curl -u #{profitbricks_user}:#{profitbricks_password} ftp://upload.de.profitbricks.com/hdd-images/knife-profitbricks.img -T - &> /dev/null").run
+#sed -i 's/  set timeout=-1/  set timeout=2/' /etc/grub.d/00_header
+command =<<EOF
+sed -i 's/  set timeout=-1/  set timeout=2/' /etc/grub.d/00_header && \
+grub-install /dev/sda && \
+dd if=/dev/sda conv=sync bs=1M | curl -u #{profitbricks_user}:#{profitbricks_password} ftp://upload.de.profitbricks.com/hdd-images/knife-profitbricks.img -T - &> /dev/null
+EOF
+        ssh(command).run
 
         ## Cleanup
-        #server.delete
-        #hdd1.delete
+        server.delete
+        hdd1.delete
         wait_for(ui.color("Image uploaded deleting server", :green)) { dc.provisioned? }
         puts ui.color("Done, you can now create new servers using your template storage with 'knife profitbricks server create'", :green)
       end
