@@ -31,8 +31,8 @@ class Chef
       option :image_name,
         :short => "-i IMAGE_NAME",
         :long => "--image-name IMAGE_NAME",
-        :description => "The image name which will be used to create the initial server 'template', default is 'profitbricks-ubuntu-12.04-server-amd64.img'",
-        :default => 'profitbricks-ubuntu-12.04-server-amd64.img'
+        :description => "The image name which will be used to create the initial server 'template', default is 'Ubuntu-12.10-server-amd64-03.21.13.img'",
+        :default => 'Ubuntu-12.10-server-amd64-03.21.13.img'
 
       option :user,
         :short => "-u USERNAME",
@@ -45,6 +45,11 @@ class Chef
         :long => "--public-key-file PUBLIC_KEY_FILE",
         :description => "The SSH public key file to be added to the authorized_keys of the given user, default is '~/.ssh/id_rsa.pub'",
         :default => "#{File.expand_path('~')}/.ssh/id_rsa.pub"
+
+      option :ftp_image_name,
+        :long => "--ftp-image-name NAME",
+        :description => "Filename to store the image of the initialized server.",
+        :default => "knife-profitbricks.img"
 
       def h
         @highline ||= HighLine.new
@@ -74,7 +79,7 @@ class Chef
 
         ## Setup storage and server
         puts ui.color("Locating Image", :magenta)
-        image = Image.find(:name => locate_config_value(:image_name))
+        image = Image.find(:name => locate_config_value(:image_name), :region => dc.region)
 
         hdd1 = Storage.create(:size => 5, :mount_image_id => image.id, :data_center_id => dc.id)
         wait_for(ui.color("Creating Storage", :magenta)) { dc.provisioned? }
@@ -102,6 +107,11 @@ class Chef
           exit 1
         end
 
+        wait_for(ui.color("Waiting for the Server to be accessible", :magenta)) {
+          ping = `ping -q -c 1 #{server.ips}`
+          $?.exitstatus == 0
+        }
+
         ## Change the default password
         @server = server.ips
         puts ui.color("Preparing the image to be used for provisioning new servers", :green)
@@ -115,14 +125,6 @@ class Chef
         puts ui.color("Changed the password successfully", :green)
 
         ## SSH Key
-        dot_ssh_path = ""
-        if locate_config_value(:user) != 'root'
-          ssh("useradd #{locate_config_value(:user)} -G sudo -m")
-          dot_ssh_path = "/home/#{locate_config_value(:user)}/.ssh"
-        else
-          dot_ssh_path = "/root/.ssh"
-        end
-
         ssh_key = begin
           File.open(locate_config_value(:public_key_file)).read 
         rescue Exception => e
@@ -130,23 +132,30 @@ class Chef
           ui.error("Could not read the provided public ssh key, check the public_key_file config.")
           exit 1
         end
+
+        dot_ssh_path = if locate_config_value(:user) != 'root'
+          ssh("useradd #{locate_config_value(:user)} -G sudo -m").run
+          "/home/#{locate_config_value(:user)}/.ssh"
+        else
+          "/root/.ssh"
+        end
+
         ssh("mkdir -p #{dot_ssh_path} && echo \"#{ssh_key}\" > #{dot_ssh_path}/authorized_keys && chmod -R go-rwx #{dot_ssh_path}").run
         puts ui.color("Added the ssh key to the authorized_keys of #{locate_config_value(:user)}", :green)
 
         ## Image uploading
         puts ui.color("Uploading the image to the profitbricks ftp server for later usage (this will take a few minutes)", :magenta)
-#sed -i 's/  set timeout=-1/  set timeout=2/' /etc/grub.d/00_header
+#sed -i 's/  set timeout=-1/  set timeout=2/' /etc/grub.d/00_header && \
+#grub-install /dev/sda && \
 command =<<EOF
-sed -i 's/  set timeout=-1/  set timeout=2/' /etc/grub.d/00_header && \
-grub-install /dev/sda && \
-dd if=/dev/sda conv=sync bs=1M | curl -u #{profitbricks_user}:#{profitbricks_password} ftp://upload.de.profitbricks.com/hdd-images/knife-profitbricks.img -T - &> /dev/null
+dd if=/dev/sda conv=sync bs=1M | curl -s -S -u #{profitbricks_user}:#{profitbricks_password} ftp://upload.de.profitbricks.com/hdd-images/#{locate_config_value(:ftp_image_name)} -T -
 EOF
         ssh(command).run
 
         ## Cleanup
         server.delete
         hdd1.delete
-        wait_for(ui.color("Image uploaded deleting server", :green)) { dc.provisioned? }
+        wait_for(ui.color("Image uploaded, deleting the server and storage", :green)) { dc.provisioned? }
         puts ui.color("Done, you can now create new servers using your template storage with 'knife profitbricks server create'", :green)
       end
 
@@ -164,6 +173,8 @@ EOF
                channel.on_data do |channel, data|
                   if data.inspect.include? "current"
                           channel.send_data("#{@password}\n");
+                  elsif data.inspect.include? "New"
+                          channel.send_data("#{@new_password}\n");
                   elsif data.inspect.include? "new"
                           channel.send_data("#{@new_password}\n");
                   end

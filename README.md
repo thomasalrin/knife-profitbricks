@@ -26,9 +26,9 @@ or store them in environment variables
 
 This plugin provides the following Knife subcommands. Specific command options can be found by invoking the subcommand with a ``--help`` flag
 
-### knife profitbricks server initialize
+### knife profitbricks initialize
 
-Due to the specifics of the Profitbricks IaaS we first need to create an image which will be later used to provision new servers. You can specify the base image to be used, a user to create and your ssh public get.
+Due to the specifics of the Profitbricks IaaS we first need to create an image which will be later used to provision new servers. You can specify the base image to be used, a user to create and your ssh public key.
 
 ### knife profitbricks server create
 

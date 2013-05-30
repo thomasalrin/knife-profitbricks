@@ -5,8 +5,8 @@ class Chef
     module ProfitbricksBase
       def configure
         Profitbricks.configure do |config|
-          config.username = ENV["PROFITBRICKS_USER"]
-          config.password = ENV["PROFITBRICKS_PASSWORD"]
+          config.username = locate_config_value(:profitbricks_user)     || ENV["PROFITBRICKS_USER"]
+          config.password = locate_config_value(:profitbricks_password) || ENV["PROFITBRICKS_PASSWORD"]
         end
       end
       

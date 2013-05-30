@@ -76,9 +76,9 @@ class Chef
       option :distro,
         :short => "-d DISTRO",
         :long => "--distro DISTRO",
-        :description => "Bootstrap a distro using a template; default is 'ubuntu12.04-gems'",
+        :description => "Bootstrap a distro using a template; default is 'ubuntu12.10-gems'",
         :proc => Proc.new { |d| Chef::Config[:knife][:distro] = d },
-        :default => "ubuntu12.04-gems"
+        :default => "ubuntu12.10-gems"
 
       option :template_file,
         :long => "--template-file TEMPLATE",
@@ -92,7 +92,10 @@ class Chef
         :description => "The Chef node name for your new node default is the name of the server.",
         :proc => Proc.new { |t| Chef::Config[:knife][:chef_node_name] = t }
 
-
+      option :ftp_image_name,
+        :long => "--ftp-image-name NAME",
+        :description => "Filename to store the image of the initialized server.",
+        :default => "knife-profitbricks.img"
 
       def h
         @highline ||= HighLine.new
@@ -119,7 +122,7 @@ class Chef
           exit 1
         end
 
-        if !Image.all.collect(&:name).include? 'knife-profitbricks.img'
+        if !Image.all.collect(&:name).include? locate_config_value(:ftp_image_name)
           ui.error("Could not locate the prepared image. You need to run 'knife profitbricks initialize' first.")
           exit 1         
         end
@@ -135,14 +138,15 @@ class Chef
 
         puts "#{ui.color("Locating Datacenter", :magenta)}"
         dc = DataCenter.find(:name => Chef::Config[:knife][:profitbricks_datacenter])
+        dc.wait_for_provisioning
 
         # DELETEME for debugging only
-        #dc.clear
-        #dc.wait_for_provisioning
+        dc.clear
+        dc.wait_for_provisioning
         # DELETEME
 
         puts "#{ui.color("Locating Image", :magenta)}"
-        image = Image.find(:name => 'knife-profitbricks.img')
+        image = Image.find(:name => locate_config_value(:ftp_image_name))
 
 
         hdd1 = Storage.create(:size => locate_config_value(:hdd_size), :mount_image_id => image.id, :data_center_id => dc.id)
@@ -167,8 +171,29 @@ class Chef
         
         @server = server.ips
 
-        server = DataCenter.find(:name => Chef::Config[:knife][:profitbricks_datacenter]).servers.first
-        @server = server.ips
+        ## Image resizing
+        puts ui.color("Resizing the disk to use all available space", :magenta)
+        command =<<EOV
+SIZE=`fdisk -l $DRIVE | grep sectors/track | awk '{print $8}'` && \
+SIZE=`echo $SIZE-2048 | bc` && \
+sfdisk -d /dev/sda > partitiontable && \
+head -n -3 partitiontable > partitiontable2 && \
+sed 's/size=\\ *[0-9]*,/size= '$SIZE',/' partitiontable2 > partitiontable && \
+echo "/dev/sda2 : start=        0, size=        0, Id= 0" >> partitiontable
+sfdisk -q --no-reread --force /dev/sda < partitiontable; \
+head -n -1 /etc/fstab > fstab2 && \
+mv fstab2 /etc/fstab
+EOV
+        ssh(command).run
+
+        server.reboot
+        sleep 50
+        wait_for("#{ui.color("Waiting for the server to reboot", :magenta)}") { server.running? }
+        
+        command = <<EOF
+resize2fs /dev/sda1
+EOF
+        ssh(command).run
 
         if !config[:bootstrap]
           exit 0
