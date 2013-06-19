@@ -140,8 +140,8 @@ class Chef
         dc.wait_for_provisioning
 
         # DELETEME for debugging only
-        dc.clear
-        dc.wait_for_provisioning
+        # dc.clear
+        # dc.wait_for_provisioning
         # DELETEME
 
         puts "#{ui.color("Locating Image", :magenta)}"
