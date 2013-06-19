@@ -8,7 +8,6 @@ README.md
 Rakefile
 lib/chef/knife/profitbricks_base.rb
 lib/chef/knife/profitbricks_images_list.rb
-lib/chef/knife/profitbricks_initialize.rb
 lib/chef/knife/profitbricks_server_create.rb
 lib/chef/knife/profitbricks_server_list.rb
 lib/knife/profitbricks.rb

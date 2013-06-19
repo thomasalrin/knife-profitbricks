@@ -5,8 +5,8 @@ class Chef
     module ProfitbricksBase
       def configure
         Profitbricks.configure do |config|
-          config.username = locate_config_value(:profitbricks_user)     || ENV["PROFITBRICKS_USER"]
-          config.password = locate_config_value(:profitbricks_password) || ENV["PROFITBRICKS_PASSWORD"]
+          config.username = profitbricks_user
+          config.password = profitbricks_password
         end
       end
       
@@ -17,8 +17,7 @@ class Chef
       end
       
       def validate!
-        if (!ENV['PROFITBRICKS_USER'] || !ENV['PROFITBRICKS_PASSWORD']) && 
-           (!locate_config_value(:profitbricks_user) || !locate_config_value(:profitbricks_password))
+        if (!profitbricks_password || !profitbricks_user)
           ui.error "You did not configure your Profitbricks credentials"
           ui.error "either export PROFITBRICKS_USER and PROFITBRICKS_PASSWORD"
           ui.error "or configure profitbricks_user and profitbricks_password in your chef.rb"

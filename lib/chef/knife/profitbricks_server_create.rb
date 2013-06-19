@@ -13,17 +13,21 @@ class Chef
         require 'highline'
         require 'chef/knife/bootstrap'
         require 'chef/knife/core/bootstrap_context'
+        require 'securerandom'
+        require 'timeout'
+        require 'socket'
+
         Chef::Knife.load_deps
 
       end
       include Knife::ProfitbricksBase
-      
+
 
       banner "knife profitbricks server create OPTIONS"
 
       option :datacenter_name,
         :short => "-D DATACENTER_NAME",
-        :long => "--datacenter-name DATACENTER_NAME",
+        :long => "--data-center DATACENTER_NAME",
         :description => "The datacenter where the server will be created",
         :proc => Proc.new { |datacenter| Chef::Config[:knife][:profitbricks_datacenter] = datacenter }
 
@@ -31,7 +35,6 @@ class Chef
         :long => "--name SERVER_NAME",
         :description => "name for the newly created Server",
         :proc => Proc.new { |image| Chef::Config[:knife][:profitbricks_server_name] = image }
-
 
       option :memory,
         :long => "--ram RAM",
@@ -42,7 +45,7 @@ class Chef
         :long => "--cpus CPUS",
         :description => "Amount of CPUs of the new Server",
         :proc => Proc.new { |cpus| Chef::Config[:knife][:profitbricks_cpus] = cpus }
-      
+
       option :hdd_size,
         :long => "--hdd-size GB",
         :description => "Size of storage in GB",
@@ -57,7 +60,7 @@ class Chef
       option :ssh_user,
         :short => "-x USERNAME",
         :long => "--ssh-user USERNAME",
-        :description => "The ssh username",
+        :description => "The user to create and add the provided public key to authorized_keys, default is 'root'",
         :default => "root"
 
       option :identity_file,
@@ -65,6 +68,18 @@ class Chef
         :long => "--identity-file IDENTITY_FILE",
         :description => "The SSH identity file used for authentication",
         :default => "#{File.expand_path('~')}/.ssh/id_rsa"
+
+      option :image_name,
+        :short => "-i IMAGE_NAME",
+        :long => "--image-name IMAGE_NAME",
+        :description => "The image name which will be used to create the initial server 'template', default is 'Ubuntu-12.04-LTS-server-amd64-03.21.13.img'",
+        :default => 'Ubuntu-12.04-LTS-server-amd64-03.21.13.img'
+
+      option :public_key_file,
+        :short => "-k PUBLIC_KEY_FILE",
+        :long => "--public-key-file PUBLIC_KEY_FILE",
+        :description => "The SSH public key file to be added to the authorized_keys of the given user, default is '~/.ssh/id_rsa.pub'",
+        :default => "#{File.expand_path('~')}/.ssh/id_rsa.pub"
 
       option :run_list,
         :short => "-r RUN_LIST",
@@ -76,9 +91,9 @@ class Chef
       option :distro,
         :short => "-d DISTRO",
         :long => "--distro DISTRO",
-        :description => "Bootstrap a distro using a template; default is 'ubuntu12.10-gems'",
+        :description => "Bootstrap a distro using a template; default is 'ubuntu12.04-gems'",
         :proc => Proc.new { |d| Chef::Config[:knife][:distro] = d },
-        :default => "ubuntu12.10-gems"
+        :default => "ubuntu12.04-gems"
 
       option :template_file,
         :long => "--template-file TEMPLATE",
@@ -92,11 +107,6 @@ class Chef
         :description => "The Chef node name for your new node default is the name of the server.",
         :proc => Proc.new { |t| Chef::Config[:knife][:chef_node_name] = t }
 
-      option :ftp_image_name,
-        :long => "--ftp-image-name NAME",
-        :description => "Filename to store the image of the initialized server.",
-        :default => "knife-profitbricks.img"
-
       def h
         @highline ||= HighLine.new
       end
@@ -104,7 +114,6 @@ class Chef
       def run
         validate!
         configure
-
 
         require 'pp'
         unless Chef::Config[:knife][:profitbricks_datacenter]
@@ -115,16 +124,6 @@ class Chef
         unless Chef::Config[:knife][:profitbricks_server_name]
           ui.error("You need to provide a name for the server")
           exit 1
-        end
-
-        unless Chef::Config[:knife][:profitbricks_server_name]
-          ui.error("The name for the server must be specified")
-          exit 1
-        end
-
-        if !Image.all.collect(&:name).include? locate_config_value(:ftp_image_name)
-          ui.error("Could not locate the prepared image. You need to run 'knife profitbricks initialize' first.")
-          exit 1         
         end
 
         ui.info "Going to create a new server"
@@ -146,54 +145,74 @@ class Chef
         # DELETEME
 
         puts "#{ui.color("Locating Image", :magenta)}"
-        image = Image.find(:name => locate_config_value(:ftp_image_name))
+        image = Image.find(:name => locate_config_value(:image_name), :region => dc.region)
 
+        @password = SecureRandom.hex.gsub(/[i|l|0|1|I|L]/,'')
+        @new_password = SecureRandom.hex.gsub(/[i|l|0|1|I|L]/,'')
 
-        hdd1 = Storage.create(:size => locate_config_value(:hdd_size), :mount_image_id => image.id, :data_center_id => dc.id)
+        hdd1 = Storage.create(:size => locate_config_value(:hdd_size),
+                              :mount_image_id => image.id,
+                              :data_center_id => dc.id,
+                              :profit_bricks_image_password => @password)
         wait_for("#{ui.color("Creating Storage", :magenta)}") { dc.provisioned? }
 
-        server = dc.create_server(:cores => Chef::Config[:knife][:profitbricks_cpus] || 1, 
-                                  :ram => Chef::Config[:knife][:profitbricks_memory] || 1024, 
-                                  :name => Chef::Config[:knife][:profitbricks_server_name] || "Server", 
-                                  :boot_from_storage_id => hdd1.id, 
+        server = dc.create_server(:cores => Chef::Config[:knife][:profitbricks_cpus] || 1,
+                                  :ram => Chef::Config[:knife][:profitbricks_memory] || 1024,
+                                  :name => Chef::Config[:knife][:profitbricks_server_name] || "Server",
                                   :internet_access => true)
         wait_for("#{ui.color("Creating Server", :magenta)}") { dc.provisioned? }
 
+        hdd1.connect(:server_id => server.id, :bus_type => 'VIRTIO')
+        wait_for("#{ui.color("Connecting Storage", :magenta)}") { dc.provisioned? }
+
         puts "#{ui.color("Done creating new Server", :green)}"
+
         wait_for("#{ui.color("Waiting for the Server to boot", :magenta)}") { server.running? }
+
         server = Server.find(:id => server.id)
+
+        wait_for(ui.color("Waiting for the Server to be accessible", :magenta)) {
+          begin
+            timeout 2 do
+              s = TCPSocket.new server.ips, 22
+              s.close
+              true
+            end
+          rescue Timeout::Error, Errno::ECONNREFUSED
+            false
+          end
+        }
+
         msg_pair("ID", server.id)
         msg_pair("Name", server.name)
         msg_pair("Datacenter", dc.name)
         msg_pair("CPUs", server.cores.to_s)
         msg_pair("RAM", server.ram.to_s)
         msg_pair("IPs", (server.respond_to?("ips") ? server.ips : ""))
-        
+
         @server = server.ips
 
-        ## Image resizing
-        puts ui.color("Resizing the disk to use all available space", :magenta)
-        command =<<EOV
-SIZE=`fdisk -l $DRIVE | grep sectors/track | awk '{print $8}'` && \
-SIZE=`echo $SIZE-2048 | bc` && \
-sfdisk -d /dev/sda > partitiontable && \
-head -n -3 partitiontable > partitiontable2 && \
-sed 's/size=\\ *[0-9]*,/size= '$SIZE',/' partitiontable2 > partitiontable && \
-echo "/dev/sda2 : start=        0, size=        0, Id= 0" >> partitiontable
-sfdisk -q --no-reread --force /dev/sda < partitiontable; \
-head -n -1 /etc/fstab > fstab2 && \
-mv fstab2 /etc/fstab
-EOV
-        ssh(command).run
+        change_password
+        @password = @new_password
+        puts ui.color("Changed the password successfully", :green)
 
-        server.reboot
-        sleep 50
-        wait_for("#{ui.color("Waiting for the server to reboot", :magenta)}") { server.running? }
-        
-        command = <<EOF
-resize2fs /dev/sda1
-EOF
-        ssh(command).run
+        ## SSH Key
+        ssh_key = begin
+          File.open(locate_config_value(:public_key_file)).read.gsub(/\n/,'')
+        rescue Exception => e
+          ui.error(e.message)
+          ui.error("Could not read the provided public ssh key, check the public_key_file config.")
+          exit 1
+        end
+
+        dot_ssh_path = if locate_config_value(:ssh_user) != 'root'
+          ssh("useradd #{locate_config_value(:ssh_user)} -G sudo -m").run
+          "/home/#{locate_config_value(:ssh_user)}/.ssh"
+        else
+          "/root/.ssh"
+        end
+        ssh("mkdir -p #{dot_ssh_path} && echo \"#{ssh_key}\" > #{dot_ssh_path}/authorized_keys && chmod -R go-rwx #{dot_ssh_path}").run
+        puts ui.color("Added the ssh key to the authorized_keys of #{locate_config_value(:ssh_user)}", :green)
 
         if !config[:bootstrap]
           exit 0
@@ -210,6 +229,30 @@ EOF
         bootstrap.config[:use_sudo] = true unless bootstrap.config[:ssh_user] == 'root'
         bootstrap.config[:template_file] = locate_config_value(:template_file)
         bootstrap.run
+      end
+
+      def change_password
+        Net::SSH.start( @server, 'root', :password =>@password, :paranoid => false ) do |ssh|
+          ssh.open_channel do |channel|
+             channel.on_request "exit-status" do |channel, data|
+                $exit_status = data.read_long
+             end
+             channel.on_data do |channel, data|
+                if data.inspect.include? "current"
+                        channel.send_data("#{@password}\n");
+                elsif data.inspect.include? "New"
+                        channel.send_data("#{@new_password}\n");
+                elsif data.inspect.include? "new"
+                        channel.send_data("#{@new_password}\n");
+                end
+             end
+             channel.request_pty
+             channel.exec("passwd");
+             channel.wait
+
+             return $exit_status == 0
+          end
+        end
       end
     end
   end

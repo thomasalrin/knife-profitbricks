@@ -26,14 +26,53 @@ or store them in environment variables
 
 This plugin provides the following Knife subcommands. Specific command options can be found by invoking the subcommand with a ``--help`` flag
 
-### knife profitbricks initialize
-
-Due to the specifics of the Profitbricks IaaS we first need to create an image which will be later used to provision new servers. You can specify the base image to be used, a user to create and your ssh public key.
-
 ### knife profitbricks server create
 
 Provisions a new server and then perform a Chef bootstrap (using the SSH protocol). The goal of the bootstrap is to get Chef installed
 on the target system so it can run Chef Client with a Chef Server. 
+
+The following knife-profitbricks options are required:
+
+    -D DATACENTER_NAME,              The datacenter where the server will be created
+        --data-center
+        --name SERVER_NAME           name for the newly created Server
+
+These knife-profitbricks options are optional:
+
+        --cpus CPUS                  Amount of CPUs of the new Server
+        --ram RAM                    Amount of Memory in MB of the new Server
+        --hdd-size GB                Size of storage in GB
+    -i, --image-name IMAGE_NAME      The image name which will be used to create the initial server 'template', 
+                                       default is 'Ubuntu-12.04-LTS-server-amd64-03.21.13.img'
+    -k PUBLIC_KEY_FILE,              The SSH public key file to be added to the authorized_keys of the given user, 
+        --public-key-file              default is '~/.ssh/id_rsa.pub'
+        
+    -x, --ssh-user USERNAME          The ssh username
+
+The following are optional options provided by knife:
+
+        --[no-]bootstrap             Bootstrap the server with knife bootstrap
+    -N, --node-name NAME             The Chef node name for your new node default is the name of the server.
+    -s, --server-url URL             Chef Server URL
+        --key KEY                    API Client Key
+        --[no-]color                 Use colored output, defaults to enabled
+    -c, --config CONFIG              The configuration file to use
+        --defaults                   Accept default values for all questions
+        --disable-editing            Do not open EDITOR, just accept the data as is
+    -d, --distro DISTRO              Bootstrap a distro using a template; default is 'ubuntu12.04-gems'
+    -e, --editor EDITOR              Set the editor to use for interactive commands
+    -E, --environment ENVIRONMENT    Set the Chef environment
+    -F, --format FORMAT              Which format to use for output
+        --identity-file IDENTITY_FILE
+                                     The SSH identity file used for authentication
+        --print-after                Show the data after a destructive operation
+    -r, --run-list RUN_LIST          Comma separated list of roles/recipes to apply
+        --template-file TEMPLATE     Full path to location of template to use
+    -V, --verbose                    More verbose output. Use twice for max verbosity
+    -v, --version                    Show chef version
+    -y, --yes                        Say yes to all prompts for confirmation
+    -h, --help                       Show this message
+
 
 ### knife profitbricks server list
 
@@ -42,6 +81,18 @@ Outputs a list of all servers.
 ### knife profitbricks image list
 
 Outputs a list of all images.
+
+## EXAMPLE
+
+First you need an existing DataCenter, you can create it via the [DCD](https://my.profitbricks.com/dashboard/dcd/) or just use the profitbricks command which got installed via the [profitbricks](https://github.com/dsander/profitbricks) gem which is a dependency of knife-profitbricks:
+
+    profitbricks data_center create name=demo
+
+You are now set up to create a new server:
+
+    knife profitbricks server create --data-center demo --name test --ram 512 --cpus 1
+
+
 
 ## LICENSE:
 
