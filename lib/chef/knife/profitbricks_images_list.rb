@@ -8,7 +8,7 @@ class Chef
       require_relative 'profitbricks_base'
       deps do
         require 'profitbricks'
-        require 'highline'        
+        require 'highline'
         Chef::Knife.load_deps
       end
 

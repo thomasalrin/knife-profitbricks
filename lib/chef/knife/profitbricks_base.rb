@@ -9,13 +9,13 @@ class Chef
           config.password = profitbricks_password
         end
       end
-      
+
       def msg_pair(label, value, color=:cyan)
         if value && !value.to_s.empty?
-          puts "#{ui.color(label, color)}: #{value}"
+          ui.info "#{ui.color(label, color)}: #{value}"
         end
       end
-      
+
       def validate!
         if (!profitbricks_password || !profitbricks_user)
           ui.error "You did not configure your Profitbricks credentials"

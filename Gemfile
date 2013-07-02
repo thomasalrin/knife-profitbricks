@@ -1,7 +1,14 @@
-source :rubygems
-gem 'profitbricks'
+source "https://rubygems.org"
 
-group :test, :development do 
+gem 'profitbricks', '~> 1.0.0'
+gem 'chef', '> 10.0.0'
+
+group :test, :development do
+  gem 'rspec'
+  gem 'guard'
+  gem 'guard-rspec'
+  gem 'simplecov', require: false
+  gem 'coveralls', require: false
   platforms :mri do
     # Temporary fix till hoe works with rbx in 1.9 mode
     gem 'hoe'
