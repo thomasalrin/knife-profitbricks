@@ -8,6 +8,8 @@ This is a knife plugin to create, bootstrap and manage servers on the Profitbric
 
     gem install knife-profitbricks
 
+If building the nokogiri C extension fails have a look at this wiki page: [Nokogiri-installation](https://github.com/dsander/knife-profitbricks/wiki/Nokogiri-installation)
+
 
 ## CONFIGURATION:
 
@@ -29,7 +31,9 @@ This plugin provides the following Knife subcommands. Specific command options c
 ### knife profitbricks server create
 
 Provisions a new server and then perform a Chef bootstrap (using the SSH protocol). The goal of the bootstrap is to get Chef installed
-on the target system so it can run Chef Client with a Chef Server. 
+on the target system so it can run Chef Client with a Chef Server.
+
+During provisioning your public SSH key will be uploaded to the newly created server, thus you should make sure a public key exists at `~/.ssh/id_rsa.pub` or provide a different key via the `--public-key-file` option.
 
 The following knife-profitbricks options are required:
 
@@ -43,7 +47,7 @@ These knife-profitbricks options are optional:
         --ram RAM                    Amount of Memory in MB of the new Server
         --hdd-size GB                Size of storage in GB
     -i, --image-name IMAGE_NAME      The image name which will be used to create the initial server 'template', 
-                                       default is 'Ubuntu-12.04-LTS-server-amd64-03.21.13.img'
+                                       default is 'Ubuntu-12.04-LTS-server-amd64-06.21.13.img'
     -k PUBLIC_KEY_FILE,              The SSH public key file to be added to the authorized_keys of the given user, 
         --public-key-file              default is '~/.ssh/id_rsa.pub'
         

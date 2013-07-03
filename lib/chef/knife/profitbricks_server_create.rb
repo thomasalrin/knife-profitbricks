@@ -72,8 +72,8 @@ class Chef
       option :image_name,
         :short => "-i IMAGE_NAME",
         :long => "--image-name IMAGE_NAME",
-        :description => "The image name which will be used to create the initial server 'template', default is 'Ubuntu-12.04-LTS-server-amd64-03.21.13.img'",
-        :default => 'Ubuntu-12.04-LTS-server-amd64-03.21.13.img'
+        :description => "The image name which will be used to create the initial server 'template', default is 'Ubuntu-12.04-LTS-server-amd64-06.21.13.img'",
+        :default => 'Ubuntu-12.04-LTS-server-amd64-06.21.13.img'
 
       option :public_key_file,
         :short => "-k PUBLIC_KEY_FILE",
