@@ -16,4 +16,5 @@ lib/knife/profitbricks.rb
 spec/spec_helper.rb
 spec/unit/profitbricks_base_spec.rb
 spec/unit/profitbricks_images_list_spec.rb
+spec/unit/profitbricks_server_create_spec.rb
 spec/unit/profitbricks_server_list_spec.rb
