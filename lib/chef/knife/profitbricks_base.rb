@@ -45,7 +45,7 @@ class Chef
       def ssh(command)
         ssh = Chef::Knife::Ssh.new
         ssh.ui = ui
-        ssh.name_args = [ @server, command ]
+        ssh.name_args = [ @server.ips, command ]
         ssh.config[:ssh_user] = "root"
         ssh.config[:ssh_password] = @password
         ssh.config[:ssh_port] = 22

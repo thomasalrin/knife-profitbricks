@@ -115,7 +115,6 @@ class Chef
         validate!
         configure
 
-        require 'pp'
         unless Chef::Config[:knife][:profitbricks_datacenter]
           ui.error("A Datacenter must be specified")
           exit 1
@@ -133,69 +132,78 @@ class Chef
         msg_pair("CPUs", Chef::Config[:knife][:profitbricks_cpus] || 1)
         msg_pair("Memory", Chef::Config[:knife][:profitbricks_memory] || 1024)
 
-        datacenters = Profitbricks::DataCenter.all
-
         puts "#{ui.color("Locating Datacenter", :magenta)}"
-        dc = DataCenter.find(:name => Chef::Config[:knife][:profitbricks_datacenter])
-        dc.wait_for_provisioning
+        @dc = DataCenter.find(:name => Chef::Config[:knife][:profitbricks_datacenter])
+        @dc.wait_for_provisioning
 
         # DELETEME for debugging only
-        # dc.clear
-        # dc.wait_for_provisioning
+        @dc.clear
+        @dc.wait_for_provisioning
         # DELETEME
 
+        create_server()
+
+        change_password()
+        @password = @new_password
+        puts ui.color("Changed the password successfully", :green)
+
+        upload_ssh_key
+
+        if config[:bootstrap]
+          bootstrap()
+        end
+
+        msg_pair("ID", @server.id)
+        msg_pair("Name", @server.name)
+        msg_pair("Datacenter", @dc.name)
+        msg_pair("CPUs", @server.cores.to_s)
+        msg_pair("RAM", @server.ram.to_s)
+        msg_pair("IPs", (@server.respond_to?("ips") ? @server.ips : ""))
+      end
+
+      def create_server
         puts "#{ui.color("Locating Image", :magenta)}"
-        image = Image.find(:name => locate_config_value(:image_name), :region => dc.region)
+        @image = Image.find(:name => locate_config_value(:image_name), :region => @dc.region)
 
         @password = SecureRandom.hex.gsub(/[i|l|0|1|I|L]/,'')
         @new_password = SecureRandom.hex.gsub(/[i|l|0|1|I|L]/,'')
 
-        hdd1 = Storage.create(:size => locate_config_value(:hdd_size),
-                              :mount_image_id => image.id,
-                              :data_center_id => dc.id,
+        @hdd1 = Storage.create(:size => locate_config_value(:hdd_size),
+                              :mount_image_id => @image.id,
+                              :data_center_id => @dc.id,
                               :profit_bricks_image_password => @password)
-        wait_for("#{ui.color("Creating Storage", :magenta)}") { dc.provisioned? }
+        wait_for("#{ui.color("Creating Storage", :magenta)}") { @dc.provisioned? }
 
-        server = dc.create_server(:cores => Chef::Config[:knife][:profitbricks_cpus] || 1,
+        @server = @dc.create_server(:cores => Chef::Config[:knife][:profitbricks_cpus] || 1,
                                   :ram => Chef::Config[:knife][:profitbricks_memory] || 1024,
                                   :name => Chef::Config[:knife][:profitbricks_server_name] || "Server",
                                   :internet_access => true)
-        wait_for("#{ui.color("Creating Server", :magenta)}") { dc.provisioned? }
+        wait_for("#{ui.color("Creating Server", :magenta)}") { @dc.provisioned? }
 
-        hdd1.connect(:server_id => server.id, :bus_type => 'VIRTIO')
-        wait_for("#{ui.color("Connecting Storage", :magenta)}") { dc.provisioned? }
+        @hdd1.connect(:server_id => @server.id, :bus_type => 'VIRTIO')
+        wait_for("#{ui.color("Connecting Storage", :magenta)}") { @dc.provisioned? }
 
         puts "#{ui.color("Done creating new Server", :green)}"
 
-        wait_for("#{ui.color("Waiting for the Server to boot", :magenta)}") { server.running? }
+        wait_for("#{ui.color("Waiting for the Server to boot", :magenta)}") { @server.running? }
 
-        server = Server.find(:id => server.id)
+        @server = Server.find(:id => @server.id)
+        wait_for(ui.color("Waiting for the Server to be accessible", :magenta)) { ssh_test(@server.ips)  }
+      end
 
-        wait_for(ui.color("Waiting for the Server to be accessible", :magenta)) {
-          begin
-            timeout 2 do
-              s = TCPSocket.new server.ips, 22
-              s.close
-              true
-            end
-          rescue Timeout::Error, Errno::ECONNREFUSED
-            false
+      def ssh_test(ip)
+        begin
+          timeout 2 do
+            s = TCPSocket.new ip, 22
+            s.close
+            true
           end
-        }
+        rescue Timeout::Error, Errno::ECONNREFUSED
+          false
+        end
+      end
 
-        msg_pair("ID", server.id)
-        msg_pair("Name", server.name)
-        msg_pair("Datacenter", dc.name)
-        msg_pair("CPUs", server.cores.to_s)
-        msg_pair("RAM", server.ram.to_s)
-        msg_pair("IPs", (server.respond_to?("ips") ? server.ips : ""))
-
-        @server = server.ips
-
-        change_password
-        @password = @new_password
-        puts ui.color("Changed the password successfully", :green)
-
+      def upload_ssh_key
         ## SSH Key
         ssh_key = begin
           File.open(locate_config_value(:public_key_file)).read.gsub(/\n/,'')
@@ -213,26 +221,10 @@ class Chef
         end
         ssh("mkdir -p #{dot_ssh_path} && echo \"#{ssh_key}\" > #{dot_ssh_path}/authorized_keys && chmod -R go-rwx #{dot_ssh_path}").run
         puts ui.color("Added the ssh key to the authorized_keys of #{locate_config_value(:ssh_user)}", :green)
-
-        if !config[:bootstrap]
-          exit 0
-        end
-
-        bootstrap = Chef::Knife::Bootstrap.new
-        bootstrap.name_args = @server
-        bootstrap.config[:run_list] = locate_config_value(:run_list)
-        bootstrap.config[:ssh_user] = locate_config_value(:ssh_user)
-        bootstrap.config[:ssh_password] = @password
-        bootstrap.config[:host_key_verify] = false
-        bootstrap.config[:chef_node_name] = locate_config_value(:chef_node_name) || server.name
-        bootstrap.config[:distro] = locate_config_value(:distro)
-        bootstrap.config[:use_sudo] = true unless bootstrap.config[:ssh_user] == 'root'
-        bootstrap.config[:template_file] = locate_config_value(:template_file)
-        bootstrap.run
       end
 
       def change_password
-        Net::SSH.start( @server, 'root', :password =>@password, :paranoid => false ) do |ssh|
+        Net::SSH.start( @server.ips, 'root', :password =>@password, :paranoid => false ) do |ssh|
           ssh.open_channel do |channel|
              channel.on_request "exit-status" do |channel, data|
                 $exit_status = data.read_long
@@ -253,6 +245,22 @@ class Chef
              return $exit_status == 0
           end
         end
+      end
+
+      def bootstrap
+        bootstrap = Chef::Knife::Bootstrap.new
+        bootstrap.name_args = @server.ips
+        bootstrap.config[:run_list] = locate_config_value(:run_list)
+        bootstrap.config[:ssh_user] = locate_config_value(:ssh_user)
+        bootstrap.config[:ssh_password] = @password
+        bootstrap.config[:host_key_verify] = false
+        bootstrap.config[:chef_node_name] = locate_config_value(:chef_node_name) || @server.name
+        bootstrap.config[:distro] = locate_config_value(:distro)
+        bootstrap.config[:use_sudo] = true unless bootstrap.config[:ssh_user] == 'root'
+        bootstrap.config[:template_file] = locate_config_value(:template_file)
+        bootstrap.run
+        # This is a temporary fix until ohai 6.18.0 is released
+        ssh("gem install ohai --pre --no-ri --no-rdoc && chef-client").run
       end
     end
   end

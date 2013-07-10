@@ -1,5 +1,6 @@
 require File.expand_path('../../spec_helper', __FILE__)
 
+Chef::Knife::ProfitbricksImageList.load_deps
 
 describe Chef::Knife::ProfitbricksImageList do
   before do

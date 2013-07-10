@@ -1,4 +1,4 @@
-# Knife Profitbricks
+# Knife Profitbricks [![Build Status](https://travis-ci.org/dsander/knife-profitbricks.png?branch=master)](https://travis-ci.org/dsander/knife-profitbricks) [![Coverage Status](https://coveralls.io/repos/dsander/knife-profitbricks/badge.png)](https://coveralls.io/r/dsander/knife-profitbricks)
 
 ## DESCRIPTION:
 
@@ -46,11 +46,11 @@ These knife-profitbricks options are optional:
         --cpus CPUS                  Amount of CPUs of the new Server
         --ram RAM                    Amount of Memory in MB of the new Server
         --hdd-size GB                Size of storage in GB
-    -i, --image-name IMAGE_NAME      The image name which will be used to create the initial server 'template', 
+    -i, --image-name IMAGE_NAME      The image name which will be used to create the initial server 'template',
                                        default is 'Ubuntu-12.04-LTS-server-amd64-06.21.13.img'
-    -k PUBLIC_KEY_FILE,              The SSH public key file to be added to the authorized_keys of the given user, 
+    -k PUBLIC_KEY_FILE,              The SSH public key file to be added to the authorized_keys of the given user,
         --public-key-file              default is '~/.ssh/id_rsa.pub'
-        
+
     -x, --ssh-user USERNAME          The ssh username
 
 The following are optional options provided by knife:

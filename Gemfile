@@ -1,9 +1,10 @@
 source "https://rubygems.org"
 
-gem 'profitbricks', '~> 1.0.0'
+gem 'profitbricks', '~> 1.0.1'
 gem 'chef', '> 10.0.0'
 
 group :test, :development do
+  gem 'rake'
   gem 'rspec'
   gem 'guard'
   gem 'guard-rspec'

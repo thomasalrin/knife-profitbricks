@@ -47,6 +47,8 @@ describe Chef::Knife::ProfitbricksBase do
   end
 
   it "should configure the ssh connection" do
+    server = Profitbricks::Server.new(:ips => "1.1.1.1")
+    @base.instance_variable_set(:@server, server)
     ssh = @base.ssh "ps"
     ssh.config.should == { :ssh_user=>"root", :ssh_password=>nil, :ssh_port=>22, :identity_file=>nil,
                            :manual=>true, :host_key_verify=>false, :on_error=>:raise }
