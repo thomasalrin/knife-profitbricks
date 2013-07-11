@@ -1,6 +1,6 @@
 # Knife Profitbricks [![Build Status](https://travis-ci.org/dsander/knife-profitbricks.png?branch=master)](https://travis-ci.org/dsander/knife-profitbricks) [![Coverage Status](https://coveralls.io/repos/dsander/knife-profitbricks/badge.png)](https://coveralls.io/r/dsander/knife-profitbricks)
 
-* http://github.com/dsander/knife-profitbricks
+* https://github.com/profitbricks/knife-profitbricks
 
 ## DESCRIPTION:
 
