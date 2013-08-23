@@ -87,7 +87,7 @@ GEM
       mixlib-shellout
       systemu
       yajl-ruby
-    profitbricks (1.0.1)
+    profitbricks (1.0.3)
       savon (= 2.2.0)
     pry (0.9.12.2)
       coderay (~> 1.0.5)
@@ -142,7 +142,7 @@ DEPENDENCIES
   hoe-bundler
   hoe-gemspec
   hoe-git
-  profitbricks (~> 1.0.1)
+  profitbricks (= 1.0.3)
   rake
   rspec
   simplecov
