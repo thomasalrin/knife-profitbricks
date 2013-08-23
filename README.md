@@ -1,4 +1,4 @@
-# Knife Profitbricks [![Build Status](https://travis-ci.org/dsander/knife-profitbricks.png?branch=master)](https://travis-ci.org/dsander/knife-profitbricks) [![Coverage Status](https://coveralls.io/repos/dsander/knife-profitbricks/badge.png)](https://coveralls.io/r/dsander/knife-profitbricks)
+# Knife Profitbricks [![Build Status](https://travis-ci.org/profitbricks/knife-profitbricks.png?branch=master)](https://travis-ci.org/profitbricks/knife-profitbricks) [![Coverage Status](https://coveralls.io/repos/profitbricks/knife-profitbricks/badge.png)](https://coveralls.io/r/profitbricks/knife-profitbricks)
 
 * https://github.com/profitbricks/knife-profitbricks
 
@@ -10,7 +10,7 @@ This is a knife plugin to create, bootstrap and manage servers on the Profitbric
 
     gem install knife-profitbricks
 
-If building the nokogiri C extension fails have a look at this wiki page: [Nokogiri-installation](https://github.com/dsander/knife-profitbricks/wiki/Nokogiri-installation)
+If building the nokogiri C extension fails have a look at this wiki page: [Nokogiri-installation](https://github.com/profitbricks/knife-profitbricks/wiki/Nokogiri-installation)
 
 
 ## CONFIGURATION:
