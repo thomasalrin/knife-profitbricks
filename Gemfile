@@ -1,6 +1,6 @@
 source "https://rubygems.org"
 
-gem 'profitbricks', '= 1.0.3'
+gem 'profitbricks', '= 1.1.0'
 gem 'chef', '> 10.0.0'
 
 group :test, :development do
