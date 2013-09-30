@@ -72,8 +72,14 @@ class Chef
       option :image_name,
         :short => "-i IMAGE_NAME",
         :long => "--image-name IMAGE_NAME",
-        :description => "The image name which will be used to create the initial server 'template', default is 'Ubuntu-12.04-LTS-server-amd64-06.21.13.img'",
+        :description => "The image name which will be used to create the server, default is 'Ubuntu-12.04-LTS-server-amd64-06.21.13.img'",
         :default => 'Ubuntu-12.04-LTS-server-amd64-06.21.13.img'
+
+      option :snapshot_name,
+        :short => '-S SNAPSHOT_NAME',
+        :long => "--snaphot-name SNAPSHOT_NAME",
+        :description => "The snapshot name which will be used to create the server (can not be used with the image-name option)",
+        :proc => Proc.new { |s| Chef::Config[:knife][:profitbricks_snapshot_name] = s }
 
       option :public_key_file,
         :short => "-k PUBLIC_KEY_FILE",
@@ -162,17 +168,27 @@ class Chef
       end
 
       def create_server
-        puts "#{ui.color("Locating Image", :magenta)}"
-        @image = Image.find(:name => locate_config_value(:image_name), :region => @dc.region)
-
         @password = SecureRandom.hex.gsub(/[i|l|0|1|I|L]/,'')
         @new_password = SecureRandom.hex.gsub(/[i|l|0|1|I|L]/,'')
 
-        @hdd1 = Storage.create(:size => locate_config_value(:hdd_size),
-                              :mount_image_id => @image.id,
-                              :data_center_id => @dc.id,
-                              :profit_bricks_image_password => @password)
+        storage_options = {:size => locate_config_value(:hdd_size),
+                           :data_center_id => @dc.id}
+        if locate_config_value(:profitbricks_snapshot_name)
+          puts "#{ui.color("Locating Snapshot", :magenta)}"
+          @snapshot = Snapshot.find(:name => locate_config_value(:profitbricks_snapshot_name))
+        else
+          puts "#{ui.color("Locating Image", :magenta)}"
+          @image = Image.find(:name => locate_config_value(:image_name), :region => @dc.region)
+          storage_options.merge(:mount_image_id => @image.id,
+                                :profit_bricks_image_password => @password)
+        end
+
+        @hdd1 = Storage.create(storage_options)
         wait_for("#{ui.color("Creating Storage", :magenta)}") { @dc.provisioned? }
+        if locate_config_value(:profitbricks_snapshot_name)
+          @snapshot.rollback(:storage_id => @hdd1.id)
+          wait_for("#{ui.color("Applying Snapshot", :magenta)}") { @dc.provisioned? }
+        end
 
         @server = @dc.create_server(:cores => Chef::Config[:knife][:profitbricks_cpus] || 1,
                                   :ram => Chef::Config[:knife][:profitbricks_memory] || 1024,

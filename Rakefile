@@ -20,6 +20,7 @@ if defined?(RUBY_ENGINE) && RUBY_ENGINE == 'ruby'
     self.history_file = 'CHANGELOG.md'
     self.extra_deps << ["profitbricks", '= 1.1.0']
     self.extra_deps << ["chef", "> 10.0.0"]
+    self.licenses = ["MIT"]
   end
 
   task :prerelease => [:clobber, :check_manifest, :test]

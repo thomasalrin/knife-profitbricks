@@ -50,6 +50,9 @@ These knife-profitbricks options are optional:
         --hdd-size GB                Size of storage in GB
     -i, --image-name IMAGE_NAME      The image name which will be used to create the initial server 'template',
                                        default is 'Ubuntu-12.04-LTS-server-amd64-06.21.13.img'
+    -S, --snaphot-name SNAPSHOT_NAME The snapshot name which will be used to create the server
+                                       (can not be used with the image-name option)
+
     -k PUBLIC_KEY_FILE,              The SSH public key file to be added to the authorized_keys of the given user,
         --public-key-file              default is '~/.ssh/id_rsa.pub'
 
@@ -87,6 +90,24 @@ Outputs a list of all servers.
 ### knife profitbricks image list
 
 Outputs a list of all images.
+
+### knife profitbricks snapshot list
+
+Outputs a list of all snapshots.
+
+### knife profitbricks snapshot create
+
+Creates a new snapshot of the given server.
+
+The following knife-profitbricks options are required:
+
+        --name SNAPSHOT_NAME         name for the newly created snapshot
+        --server-id server_id        The server of which the snapshot will be taken
+
+These knife-profitbricks options are optional:
+
+        --description description    description for the snapshot
+
 
 ## EXAMPLE
 

@@ -27,7 +27,7 @@ class Chef
         :proc => Proc.new { |name| Chef::Config[:knife][:profitbricks_snapshot_name] = name }
 
       option :description,
-        :long => "--ram description",
+        :long => "--description description",
         :description => "description for the snapshot",
         :proc => Proc.new { |desc| Chef::Config[:knife][:profitbricks_snapshot_description] = desc }
 
