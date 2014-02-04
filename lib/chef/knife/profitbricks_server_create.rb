@@ -172,17 +172,18 @@ class Chef
         @new_password = SecureRandom.hex.gsub(/[i|l|0|1|I|L]/,'')
 
         storage_options = {:size => locate_config_value(:hdd_size),
-                           :data_center_id => @dc.id}
+                           :data_center_id => "#{@dc.id}"}
         if locate_config_value(:profitbricks_snapshot_name)
           puts "#{ui.color("Locating Snapshot", :magenta)}"
           @snapshot = Snapshot.find(:name => locate_config_value(:profitbricks_snapshot_name))
         else
           puts "#{ui.color("Locating Image", :magenta)}"
-          @image = Image.find(:name => locate_config_value(:image_name), :region => @dc.region)
-          #storage_options.merge(:mount_image_id => @image.id, :profit_bricks_image_password => @password)
-          storage_options.merge(:mount_image_id => @image.id)
+          @image = Image.find(:name => "#{locate_config_value(:image_name)}", :region => "#{@dc.region}")
+          storage_options = storage_options.merge(:mount_image_id => "#{@image.id}", :profit_bricks_image_password => @password)
+          #storage_options.merge(:mount_image_id => @image.id)
         end
-
+	puts "STORAGE OPTIONS ==========================> "
+	puts storage_options.inspect
         @hdd1 = Storage.create(storage_options)
         wait_for("#{ui.color("Creating Storage", :magenta)}") { @dc.provisioned? }
         if locate_config_value(:profitbricks_snapshot_name)
@@ -190,11 +191,17 @@ class Chef
           wait_for("#{ui.color("Applying Snapshot", :magenta)}") { @dc.provisioned? }
         end
 
+	puts "STORAGE DETAILS ==========================> "
+	puts @hdd1.inspect
+	
         @server = @dc.create_server(:cores => Chef::Config[:knife][:profitbricks_cpus] || 1,
                                   :ram => Chef::Config[:knife][:profitbricks_memory] || 1024,
                                   :name => Chef::Config[:knife][:profitbricks_server_name] || "Server",
-                                  :boot_from_storage_id => @hdd1.id,
+                                  :boot_from_storage_id => "#{@hdd1.id}",
                                   :internet_access => true)
+	puts "SERVER DETAILS ==========================> "
+	puts @server.inspect
+
         wait_for("#{ui.color("Creating Server", :magenta)}") { @dc.provisioned? }
 
         #@hdd1.connect(:server_id => @server.id, :bus_type => 'VIRTIO')
