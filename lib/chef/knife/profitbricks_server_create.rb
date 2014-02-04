@@ -179,8 +179,8 @@ class Chef
         else
           puts "#{ui.color("Locating Image", :magenta)}"
           @image = Image.find(:name => locate_config_value(:image_name), :region => @dc.region)
-          storage_options.merge(:mount_image_id => @image.id,
-                                :profit_bricks_image_password => @password)
+          #storage_options.merge(:mount_image_id => @image.id, :profit_bricks_image_password => @password)
+          storage_options.merge(:mount_image_id => @image.id)
         end
 
         @hdd1 = Storage.create(storage_options)
@@ -193,11 +193,12 @@ class Chef
         @server = @dc.create_server(:cores => Chef::Config[:knife][:profitbricks_cpus] || 1,
                                   :ram => Chef::Config[:knife][:profitbricks_memory] || 1024,
                                   :name => Chef::Config[:knife][:profitbricks_server_name] || "Server",
+                                  :boot_from_storage_id => @hdd1.id,
                                   :internet_access => true)
         wait_for("#{ui.color("Creating Server", :magenta)}") { @dc.provisioned? }
 
-        @hdd1.connect(:server_id => @server.id, :bus_type => 'VIRTIO')
-        wait_for("#{ui.color("Connecting Storage", :magenta)}") { @dc.provisioned? }
+        #@hdd1.connect(:server_id => @server.id, :bus_type => 'VIRTIO')
+        #wait_for("#{ui.color("Connecting Storage", :magenta)}") { @dc.provisioned? }
 
         puts "#{ui.color("Done creating new Server", :green)}"
 

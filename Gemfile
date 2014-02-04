@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 
-gem 'profitbricks', '= 1.1.0'
-gem 'chef', '> 10.0.0'
+gem 'profitbricks', :git => "git://github.com/indykish/profitbricks-rb.git"
+gem 'chef', '> 11.0.0'
 
 group :test, :development do
   gem 'rake'
