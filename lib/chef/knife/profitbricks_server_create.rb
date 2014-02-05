@@ -31,6 +31,19 @@ class Chef
         :description => "The datacenter where the server will be created",
         :proc => Proc.new { |datacenter| Chef::Config[:knife][:profitbricks_datacenter] = datacenter }
 
+      option :profitbricks_user,
+        :short => "-A PROFITBRICKS_USERNAME",
+        :long => "--username PROFITBRICKS_USERNAME",
+        :description => "The username for profitbricks cloud",
+        :proc => Proc.new { |username| Chef::Config[:knife][:profitbricks_user] = username }
+
+      option :profitbricks_password,
+        :short => "-K PROFITBRICKS_PASSWORD",
+        :long => "--password PROFITBRICKS_PASSWORD",
+        :description => "The password for profitbricks cloud",
+        :proc => Proc.new { |password| Chef::Config[:knife][:profitbricks_password] = password }
+        
+                
       option :name,
         :long => "--name SERVER_NAME",
         :description => "name for the newly created Server",
@@ -117,6 +130,8 @@ class Chef
         @highline ||= HighLine.new
       end
 
+
+      
       def run
         validate!
         configure
@@ -182,8 +197,6 @@ class Chef
           storage_options = storage_options.merge(:mount_image_id => "#{@image.id}", :profit_bricks_image_password => @password)
           #storage_options.merge(:mount_image_id => @image.id)
         end
-	puts "STORAGE OPTIONS ==========================> "
-	puts storage_options.inspect
         @hdd1 = Storage.create(storage_options)
         wait_for("#{ui.color("Creating Storage", :magenta)}") { @dc.provisioned? }
         if locate_config_value(:profitbricks_snapshot_name)
@@ -191,16 +204,11 @@ class Chef
           wait_for("#{ui.color("Applying Snapshot", :magenta)}") { @dc.provisioned? }
         end
 
-	puts "STORAGE DETAILS ==========================> "
-	puts @hdd1.inspect
-	
         @server = @dc.create_server(:cores => Chef::Config[:knife][:profitbricks_cpus] || 1,
                                   :ram => Chef::Config[:knife][:profitbricks_memory] || 1024,
                                   :name => Chef::Config[:knife][:profitbricks_server_name] || "Server",
                                   :boot_from_storage_id => "#{@hdd1.id}",
                                   :internet_access => true)
-	puts "SERVER DETAILS ==========================> "
-	puts @server.inspect
 
         wait_for("#{ui.color("Creating Server", :magenta)}") { @dc.provisioned? }
 
