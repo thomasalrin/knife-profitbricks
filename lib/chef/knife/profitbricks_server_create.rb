@@ -292,7 +292,7 @@ class Chef
         bootstrap.config[:template_file] = locate_config_value(:template_file)
         bootstrap.run
         # This is a temporary fix until ohai 6.18.0 is released
-        ssh("gem install ohai --pre --no-ri --no-rdoc && chef-client").run
+        #ssh("gem install ohai --pre --no-ri --no-rdoc && chef-client").run
       end
     end
   end
