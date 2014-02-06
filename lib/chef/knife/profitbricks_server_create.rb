@@ -212,7 +212,7 @@ class Chef
 
         @server = @dc.create_server(:cores => Chef::Config[:knife][:profitbricks_cpus] || 1,
                                   :ram => Chef::Config[:knife][:profitbricks_memory] || 1024,
-                                  :name => Chef::Config[:knife][:profitbricks_server_name] || "Server",
+                                  :name => Chef::Config[:knife][:profitbricks_server_name] || locate_config_value(:chef_node_name),
                                   :boot_from_storage_id => "#{@hdd1.id}",
                                   :internet_access => true)
 
