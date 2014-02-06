@@ -43,6 +43,12 @@ class Chef
         :description => "The password for profitbricks cloud",
         :proc => Proc.new { |password| Chef::Config[:knife][:profitbricks_password] = password }
         
+        
+        option :image_password,
+        :long => "--image-password IMAGE_PASSWORD",
+        :description => "The password for Your private image or snapshot",
+        :proc => Proc.new { |password| Chef::Config[:knife][:image_password] = password }
+        
                 
       option :name,
         :long => "--name SERVER_NAME",
@@ -183,9 +189,9 @@ class Chef
       end
 
       def create_server
-        @password = SecureRandom.hex.gsub(/[i|l|0|1|I|L]/,'')
+        @password =  locate_config_value(:image_password) || SecureRandom.hex.gsub(/[i|l|0|1|I|L]/,'')
         @new_password = SecureRandom.hex.gsub(/[i|l|0|1|I|L]/,'')
-
+	
         storage_options = {:size => locate_config_value(:hdd_size),
                            :data_center_id => "#{@dc.id}"}
         if locate_config_value(:profitbricks_snapshot_name)
