@@ -42,7 +42,6 @@ class Chef
         else
         	datacenters = Profitbricks::DataCenter.all
         end
-        datacenters.wait_for_provisioning
         
         datacenters.each do |dc|
         puts ui.color("Servers in Datacenter #{dc.name} : ", :blue)
@@ -55,12 +54,11 @@ class Chef
             server_list << s.ram.to_s
             server_list << (s.respond_to?("ips") ? s.ips : "")
           end
+           puts ui.list(server_list, :uneven_columns_across, 6)
         else
-          puts ui.error("Oops! No server found! ")
+          puts "#{ui.color("Sorry! No Servers Found.", :magenta)}"
         end
         end
-
-        puts ui.list(server_list, :uneven_columns_across, 6)
       end
     end
   end

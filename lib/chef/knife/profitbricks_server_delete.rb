@@ -95,7 +95,7 @@ class Chef
                 confirm("Do you really want to delete this Server")
         Profitbricks.request :delete_server, server_id: "#{ser.id}"
         
-                    ui.warn("Deleted server #{server.id}")
+                    ui.warn("Deleted server #{ser.id}")
 
             if config[:purge]
               thing_to_delete = config[:chef_node_name] || ser.name
