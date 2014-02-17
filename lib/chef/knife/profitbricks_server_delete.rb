@@ -26,6 +26,10 @@ class Chef
         :description => "The datacenter of which to list the servers",
         :proc => Proc.new { |datacenter| Chef::Config[:knife][:profitbricks_datacenter] = datacenter }
         
+      option :identity_file,
+        :long => "--identity-file IDENTITY_FILE",
+        :description => "Megam systems usage. It does nothing."
+        
       option :purge,
         :short => "-P",
         :long => "--purge",
