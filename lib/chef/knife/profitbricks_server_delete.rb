@@ -22,9 +22,28 @@ class Chef
 
       option :datacenter_name,
         :short => "-d DATACENTER_NAME",
-        :long => "--datacenter-name DATACENTER_NAME",
+        :long => "--data-center DATACENTER_NAME",
         :description => "The datacenter of which to list the servers",
         :proc => Proc.new { |datacenter| Chef::Config[:knife][:profitbricks_datacenter] = datacenter }
+        
+        
+     option :public_key,
+        :long => "--public-key-file Public-key",
+        :description => "Megam test public key"
+
+        
+      option :profitbricks_user,
+        :short => "-A PROFITBRICKS_USERNAME",
+        :long => "--username PROFITBRICKS_USERNAME",
+        :description => "The username for profitbricks cloud",
+        :proc => Proc.new { |username| Chef::Config[:knife][:profitbricks_user] = username }
+
+      option :profitbricks_password,
+        :short => "-K PROFITBRICKS_PASSWORD",
+        :long => "--password PROFITBRICKS_PASSWORD",
+        :description => "The password for profitbricks cloud",
+        :proc => Proc.new { |password| Chef::Config[:knife][:profitbricks_password] = password }
+        
         
       option :identity_file,
         :long => "--identity-file IDENTITY_FILE",
