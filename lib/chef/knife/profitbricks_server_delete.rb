@@ -128,8 +128,9 @@ class Chef
               ui.warn("Corresponding node and client for the #{ser.name} server were not deleted and remain registered with the Chef Server")
             end
             
-            
-		end 
+            else
+            	ui.warn("No server detected in name :  #{server_name}")
+	    end 
           end
          end
         else
